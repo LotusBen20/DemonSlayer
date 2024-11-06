@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+spring:
+  thymeleaf:
+    cache: false
+  application:
+    name: business-bot
+
+bot:
+  username: ${BOT_USERNAME}
+  token: ${BOT_TOKEN}
+
+telegram:
+  webapp:
+    url: ${WEBAPP_URL}
+
+logging:
+  file:
+    name: ./data/app.log
+  level:
+    root: INFO
+    com.businessbot: DEBUG

@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  business-bot:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - BOT_TOKEN=7926358126:AAH3HxamtDLpWf9YqMie8-_GbD30I_VSLLU
+      - BOT_USERNAME=DemonSlayerBot
+      - WEBAPP_URL=http://localhost:8080
+    volumes:
+      - ./data:/app/data
+    restart: always

@@ -1,0 +1,13 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+# Запуск Docker демона
+dockerd &
+
+# Ждем запуска Docker
+sleep 10
+
+# Переход в директорию проекта
+cd ~/your-repo
+
+# Запуск контейнеров
+docker-compose up -d 

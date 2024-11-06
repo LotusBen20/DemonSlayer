@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  business-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: business-bot
+    container_name: business-bot
+    restart: always
+    ports:
+      - "8080:8080" 

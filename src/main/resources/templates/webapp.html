@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mining Dashboard</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --mining-button-size: 160px;
+        }
+
+        body {
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding-bottom: 30px;
+        }
+
+        .mining-section {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .mining-button {
+            width: var(--mining-button-size);
+            height: var(--mining-button-size);
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, 
+                var(--tg-theme-button-color), 
+                var(--tg-theme-secondary-bg-color));
+            border: none;
+            box-shadow: 0 0 20px var(--tg-theme-button-color);
+            transition: all 0.2s ease;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+        }
+
+        .mining-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 30px var(--tg-theme-button-color);
+        }
+
+        .stats-card {
+            background: var(--tg-theme-secondary-bg-color);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .stat-item {
+            background: linear-gradient(145deg, 
+                var(--tg-theme-secondary-bg-color), 
+                var(--tg-theme-bg-color));
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--tg-theme-button-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--tg-theme-hint-color);
+            font-size: 0.9rem;
+        }
+
+        .upgrades-section {
+            margin-top: 30px;
+        }
+
+        .upgrade-card {
+            background: var(--tg-theme-secondary-bg-color);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .upgrade-info {
+            flex: 1;
+            padding: 0 15px;
+        }
+
+        .upgrade-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .upgrade-cost {
+            color: var(--tg-theme-hint-color);
+            font-size: 0.9rem;
+        }
+
+        .upgrade-button {
+            background: var(--tg-theme-button-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 15px;
+            font-weight: bold;
+        }
+
+        .upgrade-button:disabled {
+            opacity: 0.5;
+        }
+
+        .mining-progress {
+            width: 100%;
+            height: 4px;
+            background: var(--tg-theme-bg-color);
+            border-radius: 2px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background: var(--tg-theme-button-color);
+            transition: width 0.3s ease;
+        }
+
+        .rewards-list {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .reward-item {
+            background: var(--tg-theme-bg-color);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .reward-amount {
+            color: var(--tg-theme-button-color);
+            font-weight: bold;
+        }
+
+        .reward-time {
+            color: var(--tg-theme-hint-color);
+            font-size: 0.8rem;
+        }
+
+        @keyframes floatingReward {
+            0% { transform: translate(-50%, 0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translate(-50%, -100px); opacity: 0; }
+        }
+
+        .floating-reward {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--tg-theme-button-color);
+            font-weight: bold;
+            font-size: 1.2rem;
+            pointer-events: none;
+            animation: floatingReward 1.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="mining-section">
+            <!-- Кнопка майнинга -->
+            <button id="miningButton" class="mining-button">
+                ⛏
+            </button>
+            <div class="mining-progress">
+                <div id="progressBar" class="progress-bar"></div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="stats-card">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="balance">0.00</div>
+                        <div class="stat-label">Баланс</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="miningPower">1</div>
+                        <div class="stat-label">Мощность</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="clickReward">0.00</div>
+                        <div class="stat-label">За клик</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalMined">0.00</div>
+                        <div class="stat-label">Всего добыто</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Улучшения -->
+            <div class="upgrades-section">
+                <div class="upgrade-card">
+                    <div class="upgrade-icon">⚡</div>
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">Мощность майнинга</div>
+                        <div class="upgrade-cost" id="powerUpgradeCost">1000 💰</div>
+                    </div>
+                    <button class="upgrade-button" id="powerUpButton">Улучшить</button>
+                </div>
+
+                <div class="upgrade-card">
+                    <div class="upgrade-icon">🔋</div>
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">Энергия (x2 на 5 мин)</div>
+                        <div class="upgrade-cost" id="energyUpgradeCost">2000 💰</div>
+                    </div>
+                    <button class="upgrade-button" id="energyUpButton">Улучшить</button>
+                </div>
+
+                <div class="upgrade-card">
+                    <div class="upgrade-icon">⚙️</div>
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">Эффективность (x1.5)</div>
+                        <div class="upgrade-cost" id="efficiencyUpgradeCost">5000 💰</div>
+                    </div>
+                    <button class="upgrade-button" id="efficiencyUpButton">Улучшить</button>
+                </div>
+            </div>
+
+            <!-- История наград -->
+            <div class="stats-card">
+                <h6>История наград</h6>
+                <div id="rewardsList" class="rewards-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Инициализация
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        // Получаем userId из initData
+        let userId;
+        try {
+            userId = tg.initDataUnsafe?.user?.id;
+            if (!userId) {
+                showError('Ошибка: не удалось получить ID пользователя');
+                return;
+            }
+        } catch (e) {
+            console.error('Error parsing init data:', e);
+            showError('Ошибка инициализации');
+            return;
+        }
+
+        // Кэширование элементов
+        const miningButton = document.getElementById('miningButton');
+        const balanceElement = document.getElementById('balance');
+        const miningPowerElement = document.getElementById('miningPower');
+        const clickRewardElement = document.getElementById('clickReward');
+        const totalMinedElement = document.getElementById('totalMined');
+        const rewardsList = document.getElementById('rewardsList');
+        const progressBar = document.getElementById('progressBar');
+
+        let isAnimating = false;
+        let cachedBalance = 0;
+        let cachedMiningPower = 1;
+        let totalMined = 0;
+
+        // Обработчик клика
+        miningButton.addEventListener('click', async () => {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            // Анимация прогресс-бара
+            progressBar.style.width = '0%';
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 5;
+                progressBar.style.width = `${progress}%`;
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                }
+            }, 25);
+
+            try {
+                const response = await fetch(`/webapp/api/mine?userId=${userId}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showFloatingReward(data.reward);
+                    addRewardToHistory(data.reward);
+                    updateStats();
+                    tg.HapticFeedback.impactOccurred('medium');
+                }
+            } catch (error) {
+                console.error('Mining error:', error);
+                showError('Ошибка майнинга');
+            } finally {
+                setTimeout(() => {
+                    progressBar.style.width = '0%';
+                    isAnimating = false;
+                }, 500);
+            }
+        });
+
+        // Обработчики улучшений
+        document.getElementById('powerUpButton').addEventListener('click', () => handleUpgrade('power'));
+        document.getElementById('energyUpButton').addEventListener('click', () => handleUpgrade('energy'));
+        document.getElementById('efficiencyUpButton').addEventListener('click', () => handleUpgrade('efficiency'));
+
+        async function handleUpgrade(type) {
+            try {
+                const response = await fetch(`/webapp/api/upgrade/${type}?userId=${userId}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showFloatingReward(-data.cost, '💰');
+                    updateStats();
+                    tg.HapticFeedback.impactOccurred('rigid');
+                    showSuccess(`Улучшение "${type}" выполнено!`);
+                } else {
+                    showError(data.message || 'Недостаточно средств');
+                }
+            } catch (error) {
+                console.error('Upgrade error:', error);
+                showError('Ошибка улучшения');
+            }
+        }
+
+        // Вспомогательные функции
+        function showFloatingReward(amount, prefix = '+') {
+            const reward = document.createElement('div');
+            reward.className = 'floating-reward';
+            reward.textContent = `${prefix}${amount.toFixed(2)}`;
+            document.body.appendChild(reward);
+            setTimeout(() => reward.remove(), 1500);
+        }
+
+        function addRewardToHistory(amount) {
+            const item = document.createElement('div');
+            item.className = 'reward-item';
+            item.innerHTML = `
+                <span class="reward-amount">+${amount.toFixed(2)}</span>
+                <span class="reward-time">${new Date().toLocaleTimeString()}</span>
+            `;
+            rewardsList.insertBefore(item, rewardsList.firstChild);
+            if (rewardsList.children.length > 10) {
+                rewardsList.lastChild.remove();
+            }
+        }
+
+        async function updateStats() {
+            try {
+                const response = await fetch(`/webapp/api/user-data?userId=${userId}`);
+                const data = await response.json();
+                
+                if (data.user) {
+                    cachedBalance = data.user.balance;
+                    cachedMiningPower = data.user.miningPower;
+                    
+                    balanceElement.textContent = formatNumber(cachedBalance);
+                    miningPowerElement.textContent = cachedMiningPower;
+                    clickRewardElement.textContent = formatNumber(data.clickReward || 0);
+                    totalMinedElement.textContent = formatNumber(data.totalMined || 0);
+                }
+            } catch (error) {
+                console.error('Error updating stats:', error);
+            }
+        }
+
+        function formatNumber(num) {
+            return num.toLocaleString('ru-RU', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        // Инициализация
+        updateStats();
+        setInterval(updateStats, 5000);
+    </script>
+</body>
+</html> 
